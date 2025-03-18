@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    image: php:8.0-apache
+    ports:
+      - "80:80"
+    volumes:
+      - ./api-gateway:/var/www/html
+    depends_on:
+      - auth-service
+      - content-service
+      - theme-service
+    networks:
+      - wp-microservices
+
+  auth-service:
+    image: php:8.0-apache
+    ports:
+      - "8000:80"
+    volumes:
+      - ./auth-service:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - wp-microservices
+
+  content-service:
+    image: php:8.0-apache
+    ports:
+      - "8001:80"
+    volumes:
+      - ./content-service:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - wp-microservices
+
+  theme-service:
+    image: php:8.0-apache
+    ports:
+      - "8003:80"
+    volumes:
+      - ./theme-service:/var/www/html
+      - ./WordPress_Monolith/WordPress-master/wp-content/themes:/var/www/html/themes
+    networks:
+      - wp-microservices
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress_user
+      MYSQL_PASSWORD: password
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - wp-microservices
+
+  elasticsearch:
+    image: elasticsearch:7.14.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - wp-microservices
+
+volumes:
+  db-data:
+  media-storage:
+  elasticsearch-data:
+
+networks:
+  wp-microservices:
+    driver: bridge
